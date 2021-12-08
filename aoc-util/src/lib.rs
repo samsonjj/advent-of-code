@@ -18,7 +18,7 @@ pub fn solve_and_print<T: DisplayDebug>(
     let start_part1 = time::Instant::now();
     println!(
         "Part 1: {} in {:?}",
-        match part_1(input) {
+        match part_1(input.trim()) {
             Ok(d) => d.to_string(),
             Err(e) => e.to_string(),
         },
@@ -27,7 +27,7 @@ pub fn solve_and_print<T: DisplayDebug>(
     let start_part2 = time::Instant::now();
     println!(
         "Part 2: {} in {:?}",
-        match part_2(input) {
+        match part_2(input.trim()) {
             Ok(d) => d.to_string(),
             Err(e) => e.to_string(),
         },
