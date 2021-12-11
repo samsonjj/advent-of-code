@@ -41,12 +41,13 @@ fn draw_line(
     points: &[IVec2],
     color: (u8, u8, u8),
 ) -> GameResult<()> {
-    ggez::graphics::Mesh::new_line(
+    let line = ggez::graphics::Mesh::new_line(
         ctx,
         &list_vec_itof(points)[..],
         1.0,
         Color::from_rgb(color.0, color.1, color.2),
     )?;
+    graphics::draw(ctx, &line, (Vec2::new(0.0, 0.0),))?;
     Ok(())
 }
 
@@ -69,7 +70,6 @@ impl Tile {
 
     fn render(&self, ctx: &mut Context) -> GameResult<()> {
         let (x, y) = (self.pos.x, self.pos.y);
-        println!("level={}", self.level);
         let y0 = y - self.level;
 
         let col1 = match self.flashing {
@@ -92,37 +92,37 @@ impl Tile {
             IVec2::new(x, y0),
             IVec2::new(x + 16, y0 + 8),
             IVec2::new(x + 32, y0),
-            IVec2::new(x + 32, y),
-            IVec2::new(x + 16, y + 8),
-            IVec2::new(x, y),
+            IVec2::new(x + 32, y + 1),
+            IVec2::new(x + 16, y + 1 + 8),
+            IVec2::new(x, y + 1),
+            IVec2::new(x, y0),
         ];
         draw_poly(ctx, &points[..], col4, DrawMode::fill())?;
-        draw_poly(ctx, &points[..], col4, DrawMode::fill())?;
-        draw_line(ctx, &&[IVec2::new(x, y), IVec2::new(x, y0)][..], col3)?;
-        draw_line(
-            ctx,
-            &[IVec2::new(x + 16, y0 + 8), IVec2::new(x + 16, y + 8)][..],
-            col3,
-        )?;
-        draw_line(
-            ctx,
-            &&[IVec2::new(x + 32, y0), IVec2::new(x + 32, y)][..],
-            col3,
-        )?;
+        // draw_poly(ctx, &points[..], col4, DrawMode::fill())?;
+        // draw_line(ctx, &&[IVec2::new(x, y), IVec2::new(x, y0)][..], col3)?;
+        // draw_line(
+        //     ctx,
+        //     &[IVec2::new(x + 16, y0 + 8), IVec2::new(x + 16, y + 8)][..],
+        //     col3,
+        // )?;
+        // draw_line(
+        //     ctx,
+        //     &&[IVec2::new(x + 32, y0), IVec2::new(x + 32, y)][..],
+        //     col3,
+        // )?;
 
         Ok(())
     }
 
     fn increase(&mut self, amount: i32) -> bool {
-        // println!("increase by {}", amount);
         if !self.flashing {
             if self.level + amount >= 30 {
                 self.level = 30;
                 self.flashing = true;
                 return true;
+            } else {
+                self.level += amount;
             }
-        } else {
-            self.level += amount;
         }
         false
     }
@@ -145,12 +145,6 @@ impl Tile {
     //     }
     //     return flashed;
     // }
-}
-
-const G: f32 = 1.0;
-struct Ball {
-    loc: Vec2,
-    vel: Vec2,
 }
 
 struct MainState {
@@ -186,10 +180,12 @@ impl MainState {
                 if ti + i >= 0
                     && ti + i < self.board.len() as i32
                     && tj + j >= 0
-                    && tj + j < self.board[i as usize].len() as i32
+                    && tj + j < self.board[(ti + i) as usize].len() as i32
                 {
-                    if self.board[i as usize][j as usize].increase(3) {
-                        flashed.push((i, j))
+                    if self.board[(ti + i) as usize][(tj + j) as usize]
+                        .increase(3)
+                    {
+                        flashed.push((ti + i, tj + j))
                     }
                 }
             }
@@ -200,7 +196,6 @@ impl MainState {
 
 impl event::EventHandler<ggez::GameError> for MainState {
     fn update(&mut self, _ctx: &mut Context) -> GameResult {
-        println!("update!");
         let mut fcnt = 0;
         for row in self.board.iter_mut() {
             for tile in row.iter_mut() {
@@ -215,18 +210,22 @@ impl event::EventHandler<ggez::GameError> for MainState {
             for (i, j) in self.flashing.clone().iter() {
                 next_flash.extend(self.propogate(*i, *j))
             }
+            fcnt += next_flash.len();
+            self.flashing = next_flash;
         }
         for y in 0..self.board.len() {
             let w = self.board[y].len();
             for xr in 0..w {
-                let tile = &mut self.board[y][w - xr - 1];
                 if fcnt == 0 {
-                    if tile.increase(1) {
+                    self.board[y][w - xr - 1].increase(1);
+                    if self.board[y][w - xr - 1].increase(1) {
                         self.flashing.push((y as i32, (w - xr - 1) as i32));
                     }
-                } else if self.flashing.len() == 0 && tile.flashing {
-                    tile.flashing = false;
-                    tile.level = 0;
+                } else if self.flashing.len() == 0
+                    && self.board[y][w - xr - 1].flashing
+                {
+                    self.board[y][w - xr - 1].flashing = false;
+                    self.board[y][w - xr - 1].level = 0;
                 }
             }
         }
@@ -234,7 +233,6 @@ impl event::EventHandler<ggez::GameError> for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        println!("draw!");
         graphics::clear(ctx, Color::BLACK);
 
         for row in self.board.iter() {
