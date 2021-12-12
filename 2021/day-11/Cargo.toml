@@ -10,3 +10,5 @@ aoc-util = { path = "../../aoc-util" }
 ggez = "0.7.0"
 glam = "0.20.1"
 
+[profile.dev]
+opt-level = 1

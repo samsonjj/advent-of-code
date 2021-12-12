@@ -8,14 +8,6 @@ use glam::Vec2;
 
 const INPUT: &str = include_str!("./input.txt");
 
-// fn vec_itof(vec: &IVec2) -> Vec2 {
-//     Vec2::new(vec.x as f32, vec.y as f32)
-// }
-
-// fn list_vec_itof(list: &[IVec2]) -> Vec<Vec2> {
-//     list.iter().map(|vec| vec_itof(&vec)).collect::<Vec<Vec2>>()
-// }
-
 struct Tile {
     pos: Vec2,
     level: i32,
@@ -25,17 +17,15 @@ struct Tile {
 impl Tile {
     fn new(x: f32, y: f32, h: i32) -> Self {
         Tile {
-            pos: Vec2::new(x * 18.0 + y * 18.0, 240.0 - x * 10.0 + y * 10.0),
+            pos: Vec2::new(x * 18.0 + y * 18.0, 500.0 - x * 10.0 + y * 10.0),
             level: h,
             flashing: false,
         }
     }
 
-    fn render(&self, ctx: &mut Context) -> GameResult<()> {
+    fn render(&self, mb: &mut graphics::MeshBuilder) -> GameResult<()> {
         let (x, y) = (self.pos.x, self.pos.y);
         let y0 = y - self.level as f32;
-
-        let mb = &mut graphics::MeshBuilder::new();
 
         let col1 = match self.flashing {
             true => Color::from_rgb(160, 255, 160),
@@ -43,10 +33,10 @@ impl Tile {
         };
         let col2 = Color::from_rgb(255, 255, 255);
         let points = [
-            Vec2::new(x, y0),
-            Vec2::new(x + 16.0, y0 - 8.0),
-            Vec2::new(x + 32.0, y0),
-            Vec2::new(x + 16.0, y0 + 8.0),
+            [x, y0],
+            [x + 16.0, y0 - 8.0],
+            [x + 32.0, y0],
+            [x + 16.0, y0 + 8.0],
         ];
         mb.polygon(DrawMode::fill(), &points, col1)?;
         mb.polygon(DrawMode::stroke(1.0), &points, col2)?;
@@ -54,32 +44,21 @@ impl Tile {
         let col4 = Color::from_rgb(40, 40, 40);
 
         let points = [
-            Vec2::new(x, y0),
-            Vec2::new(x + 16.0, y0 + 8.0),
-            Vec2::new(x + 32.0, y0),
-            Vec2::new(x + 32.0, y + 1.0),
-            Vec2::new(x + 16.0, y + 1.0 + 8.0),
-            Vec2::new(x, y + 1.0),
-            Vec2::new(x, y0),
+            [x, y0],
+            [x + 16.0, y0 + 8.0],
+            [x + 32.0, y0],
+            [x + 32.0, y + 1.0],
+            [x + 16.0, y + 1.0 + 8.0],
+            [x, y + 1.0],
         ];
         mb.polygon(DrawMode::fill(), &points, col4)?;
-        mb.line(&[Vec2::new(x, y + 1.0), Vec2::new(x, y0)][..], 1.0, col3)?;
+        mb.line(&[[x, y + 1.0], [x, y0]], 1.0, col3)?;
         mb.line(
-            &[
-                Vec2::new(x + 16.0, y0 + 8.0),
-                Vec2::new(x + 16.0, y + 1.0 + 8.0),
-            ][..],
+            &[[x + 16.0, y0 + 8.0], [x + 16.0, y + 1.0 + 8.0]],
             1.0,
             col3,
         )?;
-        mb.line(
-            &[Vec2::new(x + 32.0, y0), Vec2::new(x + 32.0, y + 1.0)][..],
-            1.0,
-            col3,
-        )?;
-        let mesh = &mb.build(ctx)?;
-        graphics::draw(ctx, mesh, graphics::DrawParam::new())?;
-
+        mb.line(&[[x + 32.0, y0], [x + 32.0, y + 1.0]], 1.0, col3)?;
         Ok(())
     }
 
@@ -146,7 +125,7 @@ impl MainState {
 
 impl event::EventHandler<ggez::GameError> for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
-        const DESIRED_FPS: u32 = 20;
+        const DESIRED_FPS: u32 = 35;
 
         while timer::check_update_time(ctx, DESIRED_FPS) {
             println!("{}", ggez::timer::fps(ctx));
@@ -184,25 +163,56 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 }
             }
         }
+        timer::sleep(std::time::Duration::from_millis(1));
 
         Ok(())
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        // println!("draw");
+        let now = std::time::Instant::now();
         graphics::clear(ctx, Color::BLACK);
+        let mut mb = graphics::MeshBuilder::new();
         for row in self.board.iter() {
             for tile in row.iter().rev() {
-                tile.render(ctx)?;
+                tile.render(&mut mb)?;
             }
         }
+        let mesh = mb.build(ctx)?;
+        println!(
+            "time 2 = {:?}",
+            std::time::Duration::from(std::time::Instant::now() - now)
+                .as_millis()
+        );
+        let now = std::time::Instant::now();
+        graphics::draw(ctx, &mesh, graphics::DrawParam::new())?;
+        println!(
+            "time = {:?}",
+            std::time::Duration::from(std::time::Instant::now() - now)
+                .as_millis()
+        );
         graphics::present(ctx)?;
         Ok(())
     }
 }
 
+// hello
 pub fn main() -> GameResult {
-    let cb = ggez::ContextBuilder::new("super_simple", "ggez");
+    let conf = ggez::conf::Conf::new();
+    let mut config_file = std::fs::File::create("conf.toml")?;
+    conf.to_toml_file(&mut config_file)?;
+    println!("Generated conf.toml");
+
+    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
+    let mut path = std::path::PathBuf::from(manifest_dir);
+    path.push("resources");
+
+    println!("adding resource path, {:?}", path);
+    let cb = ggez::ContextBuilder::new(
+        "day-11 animation",
+        "Jonathan Samson & p88h @ github",
+    )
+    .add_resource_path(path);
+
     let (ctx, event_loop) = cb.build()?;
     let state = MainState::new()?;
     event::run(ctx, event_loop, state)
