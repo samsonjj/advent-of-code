@@ -21,7 +21,7 @@ fn print_octopi(o: &Vec<Vec<i32>>) {
 }
 
 fn part_1(input: &str) -> AocResult<i32> {
-    let DISPLACEMENTS = vec![
+    let displacements = vec![
         (-1, -1),
         (0, -1),
         (1, -1),
@@ -52,7 +52,7 @@ fn part_1(input: &str) -> AocResult<i32> {
         //     break;
         // }
 
-        while true {
+        loop {
             let mut done = true;
             for i in 0..octopi.len() {
                 for j in 0..octopi[i].len() {
@@ -60,9 +60,9 @@ fn part_1(input: &str) -> AocResult<i32> {
                         done = false;
                         sum += 1;
                         octopi[i][j] = -1;
-                        for d in DISPLACEMENTS.iter() {
-                            let x = (i as i32 + d.0);
-                            let y = (j as i32 + d.1);
+                        for d in displacements.iter() {
+                            let x = i as i32 + d.0;
+                            let y = j as i32 + d.1;
                             if x < 0
                                 || x >= octopi.len() as i32
                                 || y < 0
@@ -100,7 +100,7 @@ fn part_1(input: &str) -> AocResult<i32> {
 }
 
 fn part_2(input: &str) -> AocResult<i32> {
-    let DISPLACEMENTS = vec![
+    let displacements: Vec<(i32, i32)> = vec![
         (-1, -1),
         (0, -1),
         (1, -1),
@@ -120,21 +120,15 @@ fn part_2(input: &str) -> AocResult<i32> {
     }
     let mut answer = None;
     let mut sum = 0;
-    for k in 0..10000 {
-        println!("k={}", k);
-        print_octopi(&octopi);
+    let mut k = 0;
+    loop {
         for i in 0..octopi.len() {
             for j in 0..octopi[i].len() {
                 octopi[i][j] += 1;
             }
         }
-        println!();
 
-        // if !octopi.iter().any(|row| row.iter().any(|num| num > &9)) {
-        //     break;
-        // }
-
-        while true {
+        loop {
             let mut done = true;
             for i in 0..octopi.len() {
                 for j in 0..octopi[i].len() {
@@ -142,9 +136,9 @@ fn part_2(input: &str) -> AocResult<i32> {
                         done = false;
                         sum += 1;
                         octopi[i][j] = -1;
-                        for d in DISPLACEMENTS.iter() {
-                            let x = (i as i32 + d.0);
-                            let y = (j as i32 + d.1);
+                        for d in displacements.iter() {
+                            let x = i as i32 + d.0;
+                            let y = j as i32 + d.1;
                             if x < 0
                                 || x >= octopi.len() as i32
                                 || y < 0
@@ -153,9 +147,6 @@ fn part_2(input: &str) -> AocResult<i32> {
                                 continue;
                             }
                             if octopi[x as usize][y as usize] != -1 {
-                                if x == 0 && y == 0 {
-                                    println!("hello");
-                                }
                                 octopi[x as usize][y as usize] += 1;
                             }
                         }
@@ -175,17 +166,13 @@ fn part_2(input: &str) -> AocResult<i32> {
             }
         }
 
-        println!("end");
-        print_octopi(&octopi);
-
         if octopi.iter().all(|row| row.iter().all(|num| num == &0)) {
             answer = Some(k + 1);
-            println!("haha!");
             break;
         }
+        k += 1;
     }
-    println!("answer={:?}", answer);
-    Ok(sum)
+    Ok(answer.unwrap())
 }
 
 #[cfg(test)]
