@@ -17,7 +17,7 @@ lazy_static! {
 }
 
 use std::rc::Rc;
-use std::cell::RefCell;
+use std::cell::{Ref, RefCell};
 
 struct Node {
     id: String,
@@ -35,34 +35,39 @@ impl Node {
     }
 }
 
-/// explores the graph. mutates nodes to mark them as visited
-fn explore(curr: Rc<RefCell<Node>>) -> i32 {
-
+fn explore(curr: Rc<RefCell<Node>>, mut allow_one_repeat: bool) -> i32 {
     if &curr.borrow().id[..] == "end" {
-        // println!("{}", curr.borrow().id);
         return 1
     }
+
+    // handle repeat
+    let mut is_repeat = false;
     if curr.borrow().visited {
-        return 0
+        if allow_one_repeat && curr.borrow().id != "start" {
+            allow_one_repeat = false;
+            is_repeat = true;
+        } else {
+            return 0
+        }
     }
 
-    // println!("{}", curr.borrow().id);
     // set visited
     if LOWERCASE_RE.is_match(&curr.borrow().id[..]) {
         curr.borrow_mut().visited = true;
     }
 
     // recurse
-    // be careful not to borrow curr in the outside scope, or else nested calls will not be able to
-    // borrow mut
     let neighbors = curr.borrow().neighbors.clone();
     let mut sum = 0;
     for neighbor in neighbors {
-        sum += explore(neighbor)
+        sum += explore(neighbor, allow_one_repeat)
     }
 
     // set unvisited
-    curr.borrow_mut().visited = false;
+    if !is_repeat {
+        curr.borrow_mut().visited = false;
+    }
+
     sum
 }
 
@@ -70,16 +75,14 @@ fn main() {
     solve_and_print(INPUT, box part_1, box part_2);
 }
 
-fn part_1(input: &str) -> AocResult<i32> {
-    let mut hm: HashMap<&str, Rc<RefCell<Node>>> = HashMap::new();
+fn parse_input(input: &str) -> Rc<RefCell<Node>> {
+    let tokens = input.lines().flat_map(|line| line.split("-"));
+
     // create nodes
-    for line in input.lines() {
-        for token in line.split("-") {
-            if !hm.contains_key(token) {
-                hm.insert(token, Rc::new(RefCell::new(Node::new(token.to_string()))));
-            }
-        }
-    }
+    let hm: HashMap<&str, Rc<RefCell<Node>>> = tokens.map(|token|
+        (token, Rc::new(RefCell::new(Node::new(token.to_string()))))
+    ).collect();
+
     // add neighbors
     for line in input.lines() {
         let keys: Vec<&str> = line.split("-").collect();
@@ -90,44 +93,32 @@ fn part_1(input: &str) -> AocResult<i32> {
         }
     }
 
-    let start_node = Rc::clone(hm.get("start").unwrap());
-    drop(hm);
+    Rc::clone(hm.get("start").unwrap())
+}
 
-    Ok(explore(start_node))
+fn part_1(input: &str) -> AocResult<i32> {
+    Ok(explore(parse_input(input), false))
 }
 
 fn part_2(input: &str) -> AocResult<i32> {
-    let mut hm: HashMap<&str, Rc<RefCell<Node>>> = HashMap::new();
-    // create nodes
-    for line in input.lines() {
-        for token in line.split("-") {
-            if !hm.contains_key(token) {
-                hm.insert(token, Rc::new(RefCell::new(Node::new(token.to_string()))));
-            }
-        }
-    }
-    // add neighbors
-    for line in input.lines() {
-        let keys: Vec<&str> = line.split("-").collect();
-        for (i, j) in [(0, 1), (1, 0)] {
-            let n1 = hm.get(keys[i]).unwrap();
-            let n2 = hm.get(keys[j]).unwrap();
-            n1.borrow_mut().neighbors.push(Rc::clone(n2));
-        }
-    }
-
-    let start_node = Rc::clone(hm.get("start").unwrap());
-    drop(hm);
-
-    Ok(explore(start_node))
+    Ok(explore(parse_input(input), true))
 }
+
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn two_plus_two() {
-        assert_eq!(2 + 2, 4);
+    fn example() {
+        let input = "start-A
+start-b
+A-c
+A-b
+b-d
+A-end
+b-end";
+        assert_eq!(part_1(input).unwrap(), 10);
+        assert_eq!(part_2(input).unwrap(), 36);
     }
 }
