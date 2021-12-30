@@ -1,5 +1,5 @@
 [package]
-name = "day-12"
+name = "day-15"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,5 +7,4 @@ edition = "2021"
 
 [dependencies]
 aoc-util = { path = "../../aoc-util" }
-regex = '1.5.4'
-lazy_static = '1.4.0'
+
