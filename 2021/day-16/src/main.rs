@@ -8,7 +8,6 @@ static INPUT: &str = include_str!("input.txt");
 static EXAMPLE: &str = include_str!("example.txt");
 
 fn main() {
-    println!("Hello, world!");
     solve_and_print(INPUT, box part_1, box part_2);
 }
 

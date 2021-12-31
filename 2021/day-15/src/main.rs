@@ -1,7 +1,7 @@
 #![feature(box_syntax)]
 #![allow(dead_code, unused_imports, unused_variables)]
 use aoc_util::{solve_and_print, AocResult};
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, BinaryHeap};
 use std::str::FromStr;
 
 static INPUT: &str = include_str!("input.txt");
@@ -10,23 +10,28 @@ static EXAMPLE: &str = include_str!("example.txt");
 struct Cave {
     risk: Vec<Vec<i32>>,
     unvisited: HashSet<Point>,
-    tent_dist: Vec<Vec<i32>>,
-    width: usize,
-    height: usize,
+    visited: HashSet<Point>,
+    dist: Vec<Vec<i32>>,
 }
 
 impl Cave {
     fn is_visited(&self, point: Point) -> bool {
-        !self.unvisited.contains(&point)
+        self.visited.contains(&point)
     }
     fn get_risk(&self, point: Point) -> i32 {
         self.risk[point.y][point.x]
     }
-    fn get_tent_dist(&self, point: Point) -> i32 {
-        self.tent_dist[point.y][point.x]
+    fn get_dist(&self, point: Point) -> i32 {
+        self.dist[point.y][point.x]
     }
-    fn set_tent_dist(&mut self, point: Point, dist: i32) {
-        self.tent_dist[point.y][point.x] = dist;
+    fn set_dist(&mut self, point: Point, dist: i32) {
+        self.dist[point.y][point.x] = dist;
+    }
+    fn width(&self) -> usize {
+        self.risk[0].len()
+    }
+    fn height(&self) -> usize {
+        self.risk.len()
     }
 }
 
@@ -42,56 +47,91 @@ impl Point {
     }
 }
 
-fn dijkstra(mut cave: Cave) -> i32 {
-    cave.set_tent_dist(Point::zero(), 0);
+impl Point {
+    fn delta(&self, d: (i32, i32)) -> Self {
+        let x = if d.0.is_negative() {
+            self.x.wrapping_sub(d.0.wrapping_abs() as u32 as usize)
+        } else {
+            self.x.wrapping_add(d.0 as usize)
+        };
+        let y = if d.1.is_negative() {
+            self.y.wrapping_sub(d.1.wrapping_abs() as u32 as usize)
+        } else {
+            self.y.wrapping_add(d.1 as usize)
+        };
+        Self { x, y }
+    }
+}
 
+static DIRECTIONS: [(i32, i32); 4] = [
+    (1, 0),
+    (-1, 0),
+    (0, 1),
+    (0, -1),
+];
+
+fn dijkstra(mut cave: Cave) -> i32 {
+    cave.set_dist(Point::zero(), 0);
+    cave.unvisited = HashSet::new();
+    cave.unvisited.insert(Point { x: 0, y: 0 });
+
+    let end_point = Point { x: cave.width()-1, y: cave.height() -1 };
+    let mut max_len = 0;
     while !cave.unvisited.is_empty() {
-        let mut min_tent_dist = i32::MAX;
+        let mut min_dist = i32::MAX;
         let mut curr = Point::zero();
+        if cave.unvisited.len() > max_len {
+            max_len = cave.unvisited.len();
+        }
         for point in cave.unvisited.iter() {
-            if cave.get_tent_dist(*point) < min_tent_dist {
+            if cave.get_dist(*point) < min_dist {
                 curr = *point;
-                min_tent_dist = cave.get_tent_dist(*point);
+                min_dist = cave.get_dist(*point);
             }
         }
-        for point in [
-            Point { x: curr.x.wrapping_sub(1), y: curr.y },
-            Point { x: curr.x + 1, y: curr.y },
-            Point { x: curr.x, y: curr.y + 1 },
-            Point { x: curr.x, y: curr.y.wrapping_sub(1) },
-        ] {
-            if point.x >= cave.width || point.y >= cave.height || cave.is_visited(point) {
+        if curr == end_point {
+            println!("max_len={}", max_len);
+            return cave.get_dist(end_point);
+        }
+        for direction in DIRECTIONS {
+            let point = curr.delta(direction);
+            if point.x >= cave.width() || point.y >= cave.height() || cave.is_visited(point) {
                 continue;
             }
-            let dist = cave.get_tent_dist(curr) + cave.get_risk(point);
-            if dist < cave.get_tent_dist(point) {
-                cave.set_tent_dist(point, dist);
+            let dist = cave.get_dist(curr) + cave.get_risk(point);
+            if dist < cave.get_dist(point) {
+                cave.set_dist(point, dist);
             }
+            cave.unvisited.insert(point);
         }
         cave.unvisited.remove(&curr);
+        cave.visited.insert(curr);
     }
-    cave.get_tent_dist(Point { x: cave.width-1, y: cave.height-1 })
+    cave.get_dist(Point { x: cave.width()-1, y: cave.height()-1 })
 }
 
 fn main() {
     solve_and_print(INPUT, box part_1, box part_2);
 }
 
-fn part_1(input: &str) -> AocResult<i32> {
-    let mut cave = Cave { risk: vec![], unvisited: HashSet::new(), tent_dist: vec![], width: 0, height: 0 };
+fn parse_input(input: &str) -> Cave {
+    let mut cave = Cave { risk: vec![], unvisited: HashSet::new(), visited: HashSet::new(), dist: vec![] };
     for (i, line) in input.lines().enumerate() {
         let mut risk_row = vec![];
-        let mut tent_dist_row = vec![];
+        let mut dist_row = vec![];
         for (j, c) in line.chars().enumerate() {
             cave.unvisited.insert(Point { x: j, y: i });
             risk_row.push(c.to_digit(10).unwrap() as i32);
-            tent_dist_row.push(i32::MAX);
+            dist_row.push(i32::MAX);
         }
         cave.risk.push(risk_row);
-        cave.tent_dist.push(tent_dist_row);
+        cave.dist.push(dist_row);
     }
-    cave.height = cave.risk.len();
-    cave.width = cave.risk[0].len();
+    cave
+}
+
+fn part_1(input: &str) -> AocResult<i32> {
+    let cave = parse_input(input);
     Ok(dijkstra(cave))
 }
 
@@ -100,29 +140,40 @@ fn add_wrap(a: i32, times: i32) -> i32 {
 }
 
 fn part_2(input: &str) -> AocResult<i32> {
-    let mut cave = Cave { risk: vec![], unvisited: HashSet::new(), tent_dist: vec![], width: 0, height: 0 };
-    for (i, line) in input.lines().enumerate() {
-        let mut risk_row = vec![];
-        let mut tent_dist_row = vec![];
-        for (j, c) in line.chars().enumerate() {
-            cave.unvisited.insert(Point { x: j, y: i });
-            risk_row.push(c.to_digit(10).unwrap() as i32);
-            tent_dist_row.push(i32::MAX);
-        }
-        cave.risk.push(risk_row);
-        cave.tent_dist.push(tent_dist_row);
-    }
-    for i in 1..5 {
-        for j in 1..5 {
-            let risk = cave.risk[i][j];
-            cave.risk[i].push(add_wrap(risk, (i + j) as i32));
-            cave.unvisited.insert(Point { x: j, y: i });
-            cave.tent_dist[i].push(i32::MAX);
+    let mut cave = parse_input(input);
+
+    // extend vertically
+    let width = cave.width();
+    let height = cave.height();
+    for k in 1..5 {
+        for i in 0..height {
+            let mut risk_row = vec![];
+            let mut dist_row = vec![];
+            for j in 0..width {
+                cave.unvisited.insert(Point { x: j, y: i + k * height });
+                risk_row.push(add_wrap(cave.risk[i][j], k as i32));
+                dist_row.push(i32::MAX);
+            }
+            cave.risk.push(risk_row);
+            cave.dist.push(dist_row);
         }
     }
-    println!("{:?}", cave.risk);
-    cave.height = cave.risk.len();
-    cave.width = cave.risk[0].len();
-    println!("{}, {}", cave.width, cave.height);
+
+    let height = cave.height();
+    let width = cave.width();
+
+    // extend horizontally
+    for i in 0..height {
+        for k in 1..5 {
+            for j in 0..width {
+                let x = j + k * width;
+                cave.unvisited.insert(Point { x, y: i });
+                let last_val = cave.risk[i][x - width];
+                cave.risk[i].push(add_wrap(last_val, 1));
+                cave.dist[i].push(i32::MAX);
+            }
+        }
+    }
+
     Ok(dijkstra(cave))
 }
