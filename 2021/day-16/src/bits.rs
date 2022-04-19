@@ -16,7 +16,7 @@ pub struct Biterator<'a> {
 }
 
 impl Biterator<'_> {
-    pub fn parse(&mut self, num_bits: usize) -> Option<u32> {
+    pub fn parse(&mut self, num_bits: usize) -> Option<u64> {
         let mut num_builder = NumBuilder::new();
         for _ in 0..num_bits {
             num_builder.push(self.next()?);
@@ -68,7 +68,7 @@ impl Iterator for Biterator<'_> {
 }
 
 pub struct NumBuilder {
-    data: u32,
+    data: u64,
 }
 
 impl NumBuilder {
@@ -82,7 +82,7 @@ impl NumBuilder {
         }
     }
 
-    pub fn build(self) -> u32 {
+    pub fn build(self) -> u64 {
         self.data
     }
 }
