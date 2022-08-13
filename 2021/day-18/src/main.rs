@@ -3,16 +3,21 @@
 use aoc_util::{solve_and_print, AocResult};
 use std::collections::{HashMap, HashSet};
 use std::iter::Peekable;
+use std::rc::Rc;
 use std::str::Chars;
 use std::str::FromStr;
+use std::rc::Rc;
+use std::cell::RefCell;
 
 static INPUT: &str = include_str!("input.txt");
 static EXAMPLE: &str = include_str!("example.txt");
 
+
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum Node {
-    Pair { left: Box<Node>, right: Box<Node> },
-    Num(u64),
+    Pair { parent: Rc<RefCell<Node>>, left: Rc<RefCell<Node>>, RefCell: Rc<RefCell<Node>> },
+    Num {x: u64, parent: Rc<RefCell<Node>>},
 }
 
 impl From<&str> for Node {
@@ -31,12 +36,15 @@ impl From<&str> for Node {
             token.parse::<u64>().unwrap()
         }
 
-        fn parse_node(iter: &mut Peekable<Chars>) -> Node {
+        fn parse_node(parent: Rc<RefCell<Node>>, iter: &mut Peekable<Chars>) -> Node {
             let c = iter.peek().unwrap();
             if c == &'[' {
                 parse_pair(iter)
             } else {
-                Node::Num(parse_number(iter))
+                Node::Num {
+                    x: parse_number(iter),
+                    parent: parent.clone(),
+                }
             }
         }
 
@@ -52,6 +60,8 @@ impl From<&str> for Node {
 
             // ']'
             iter.next();
+
+            left.parent
 
             Node::Pair {
                 left: box left,

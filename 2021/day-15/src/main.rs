@@ -3,39 +3,51 @@
 use aoc_util::{solve_and_print, AocResult};
 use std::collections::{HashMap, HashSet, BinaryHeap};
 use std::str::FromStr;
+use std::cmp::Ordering;
 
 static INPUT: &str = include_str!("input.txt");
 static EXAMPLE: &str = include_str!("example.txt");
 
 struct Cave {
     risk: Vec<Vec<i32>>,
-    unvisited: HashSet<Point>,
-    visited: HashSet<Point>,
+    open: BinaryHeap<State>,
+    closed: HashSet<Point>,
     dist: Vec<Vec<i32>>,
 }
 
 impl Cave {
     fn is_visited(&self, point: Point) -> bool {
-        self.visited.contains(&point)
-    }
-    fn get_risk(&self, point: Point) -> i32 {
-        self.risk[point.y][point.x]
-    }
-    fn get_dist(&self, point: Point) -> i32 {
-        self.dist[point.y][point.x]
-    }
-    fn set_dist(&mut self, point: Point, dist: i32) {
-        self.dist[point.y][point.x] = dist;
-    }
-    fn width(&self) -> usize {
-        self.risk[0].len()
-    }
-    fn height(&self) -> usize {
-        self.risk.len()
+        self.closed.contains(&point)
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[derive(Copy, Clone, Eq, PartialEq)]
+struct State {
+    cost: i32,
+    position: Point,
+}
+
+// The priority queue depends on `Ord`.
+// Explicitly implement the trait so the queue becomes a min-heap
+// instead of a max-heap.
+impl Ord for State {
+    fn cmp(&self, other: &Self) -> Ordering {
+        // Notice that the we flip the ordering on costs.
+        // In case of a tie we compare positions - this step is necessary
+        // to make implementations of `PartialEq` and `Ord` consistent.
+        other.cost.cmp(&self.cost)
+            .then_with(|| self.position.cmp(&other.position))
+    }
+}
+
+// `PartialOrd` needs to be implemented as well.
+impl PartialOrd for State {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Ord, PartialOrd)]
 struct Point {
     x: usize,
     y: usize,
@@ -70,44 +82,30 @@ static DIRECTIONS: [(i32, i32); 4] = [
     (0, -1),
 ];
 
-fn dijkstra(mut cave: Cave) -> i32 {
-    cave.set_dist(Point::zero(), 0);
-    cave.unvisited = HashSet::new();
-    cave.unvisited.insert(Point { x: 0, y: 0 });
-
-    let end_point = Point { x: cave.width()-1, y: cave.height() -1 };
-    let mut max_len = 0;
-    while !cave.unvisited.is_empty() {
-        let mut min_dist = i32::MAX;
-        let mut curr = Point::zero();
-        if cave.unvisited.len() > max_len {
-            max_len = cave.unvisited.len();
+fn dijkstra(mut cave: Cave, goal: Point) -> i32 {
+    cave.dist[0][0] = 0;
+    cave.open.push(State{ position: Point { x: 0, y: 0 }, cost: 0 });
+    while let Some(State { cost, position }) = cave.open.pop() {
+        if position == goal {
+            return cave.dist[position.y][position.x];
         }
-        for point in cave.unvisited.iter() {
-            if cave.get_dist(*point) < min_dist {
-                curr = *point;
-                min_dist = cave.get_dist(*point);
-            }
-        }
-        if curr == end_point {
-            println!("max_len={}", max_len);
-            return cave.get_dist(end_point);
+        if cost > cave.dist[position.y][position.x] {
+            continue;
         }
         for direction in DIRECTIONS {
-            let point = curr.delta(direction);
-            if point.x >= cave.width() || point.y >= cave.height() || cave.is_visited(point) {
+            let next_pos= position.delta(direction);
+            if next_pos.x >= cave.risk[0].len() || next_pos.y >= cave.risk.len() || cave.is_visited(next_pos) {
                 continue;
             }
-            let dist = cave.get_dist(curr) + cave.get_risk(point);
-            if dist < cave.get_dist(point) {
-                cave.set_dist(point, dist);
+            let cost = cave.dist[position.y][position.x] + cave.risk[next_pos.y][next_pos.x];
+            let state = State { position: next_pos, cost };
+            if state.cost < cave.dist[state.position.y][state.position.x] {
+                cave.dist[state.position.y][state.position.x] = state.cost;
+                cave.open.push(state);
             }
-            cave.unvisited.insert(point);
         }
-        cave.unvisited.remove(&curr);
-        cave.visited.insert(curr);
     }
-    cave.get_dist(Point { x: cave.width()-1, y: cave.height()-1 })
+    cave.dist[cave.dist.len()-1][cave.dist[0].len()-1]
 }
 
 fn main() {
@@ -115,12 +113,11 @@ fn main() {
 }
 
 fn parse_input(input: &str) -> Cave {
-    let mut cave = Cave { risk: vec![], unvisited: HashSet::new(), visited: HashSet::new(), dist: vec![] };
+    let mut cave = Cave { risk: vec![], open: BinaryHeap::new(), closed: HashSet::new(), dist: vec![] };
     for (i, line) in input.lines().enumerate() {
         let mut risk_row = vec![];
         let mut dist_row = vec![];
         for (j, c) in line.chars().enumerate() {
-            cave.unvisited.insert(Point { x: j, y: i });
             risk_row.push(c.to_digit(10).unwrap() as i32);
             dist_row.push(i32::MAX);
         }
@@ -132,7 +129,8 @@ fn parse_input(input: &str) -> Cave {
 
 fn part_1(input: &str) -> AocResult<i32> {
     let cave = parse_input(input);
-    Ok(dijkstra(cave))
+    let goal = Point { x: cave.risk[0].len()-1, y: cave.risk.len()-1 };
+    Ok(dijkstra(cave, goal))
 }
 
 fn add_wrap(a: i32, times: i32) -> i32 {
@@ -143,14 +141,13 @@ fn part_2(input: &str) -> AocResult<i32> {
     let mut cave = parse_input(input);
 
     // extend vertically
-    let width = cave.width();
-    let height = cave.height();
+    let width = cave.risk[0].len();
+    let height = cave.risk.len();
     for k in 1..5 {
         for i in 0..height {
             let mut risk_row = vec![];
             let mut dist_row = vec![];
             for j in 0..width {
-                cave.unvisited.insert(Point { x: j, y: i + k * height });
                 risk_row.push(add_wrap(cave.risk[i][j], k as i32));
                 dist_row.push(i32::MAX);
             }
@@ -159,15 +156,14 @@ fn part_2(input: &str) -> AocResult<i32> {
         }
     }
 
-    let height = cave.height();
-    let width = cave.width();
+    let height = cave.risk.len();
+    let width = cave.risk[0].len();
 
     // extend horizontally
     for i in 0..height {
         for k in 1..5 {
             for j in 0..width {
                 let x = j + k * width;
-                cave.unvisited.insert(Point { x, y: i });
                 let last_val = cave.risk[i][x - width];
                 cave.risk[i].push(add_wrap(last_val, 1));
                 cave.dist[i].push(i32::MAX);
@@ -175,5 +171,6 @@ fn part_2(input: &str) -> AocResult<i32> {
         }
     }
 
-    Ok(dijkstra(cave))
+    let goal = Point { x: cave.risk[0].len()-1, y: cave.risk.len()-1 };
+    Ok(dijkstra(cave, goal))
 }

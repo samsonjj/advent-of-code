@@ -4,8 +4,8 @@ use aoc_util::{solve_and_print, AocResult};
 use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
 
-static INPUT: &str = include_str!("input.txt");
-static EXAMPLE: &str = include_str!("example.txt");
+static INPUT: &str = include_str!("../input.txt");
+static EXAMPLE: &str = include_str!("../example.txt");
 
 const diffs: [(i32, i32); 4] = [(1, 0), (-1, 0), (0, 1), (0, -1)];
 
@@ -53,7 +53,7 @@ fn basin_size(lp: (i32, i32), heights: &Vec<Vec<i32>>, hs: &mut HashSet<(i32, i3
     for diff in diffs {
         let ii = lp.0 as i32 + diff.0;
         let jj = lp.1 as i32 + diff.1;
-        println!("{:?}, {:?}", &ii, &jj);
+        // println!("{:?}, {:?}", &ii, &jj);
         if !hs.contains(&(ii, jj))
             && ii >= 0
             && ii < heights.len() as i32
@@ -103,11 +103,11 @@ fn part_2(input: &str) -> AocResult<i64> {
         }
     }
     basins.sort();
-    println!("basins={:?}", basins);
+    // println!("basins={:?}", basins);
     let l = basins.len();
-    println!("1={:?}", basins[l - 1]);
-    println!("2={:?}", basins[l - 3]);
-    println!("3={:?}", basins[l - 2]);
+    // println!("1={:?}", basins[l - 1]);
+    // println!("2={:?}", basins[l - 3]);
+    // println!("3={:?}", basins[l - 2]);
     Ok(basins[l - 1] as i64 * basins[l - 2] as i64 * basins[l - 3] as i64)
 }
 

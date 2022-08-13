@@ -4,7 +4,7 @@
     unused_imports,
     unused_variables
 )]
-use aoc_util::{solve_and_print, AocResult};
+use aoc_util::{solve_and_print, AocResult, AocSolver};
 use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
 
@@ -12,19 +12,19 @@ static INPUT: &str = include_str!("input.txt");
 static EXAMPLE: &str = include_str!("example.txt");
 
 fn main() {
-    let temp = Temp{};
-    temp.execute(&INPUT);
+    let temp: Box<dyn AocSolver> = Box::new(Temp{});
+    temp.execute(INPUT);
 }
 
 struct Temp {}
 
 impl AocSolver for Temp {
-    fn part_1(input: &str) -> AocResult<i32> {
-        Ok(format!(3))
+    fn part_1(&self, input: &str) -> Result<String, Box<dyn std::error::Error>> {
+        Ok(format!("{}", 3))
     }
 
-    fn part_2(input: &str) -> AocResult<i32> {
-        Ok(format!(5))
+    fn part_2(&self, input: &str) -> Result<String, Box<dyn std::error::Error>> {
+        Ok(format!("{}", 5))
     }
 }
 

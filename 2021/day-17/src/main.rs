@@ -141,11 +141,10 @@ fn part_2(input: &str) -> AocResult<i32> {
         }
     }
 
+    // compute all possible (dx, dy) combinations
     let mut vels: HashSet<(i32, i32)> = HashSet::new();
-
     for x in dx_step_map {
         let x_set = &x.1;
-        // handle empty
         if let Some(y_set) = dy_step_map.get(&x.0) {
             for y_val in y_set {
                 for x_val in x_set {
