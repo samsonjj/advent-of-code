@@ -39,10 +39,8 @@ pub fn solve_and_print<T: DisplayDebug>(
 pub trait AocSolver {
     fn part_1(&self, input: &str) -> Result<String, Box<dyn Error>>;
     fn part_2(&self, input: &str) -> Result<String, Box<dyn Error>>;
-}
 
-impl dyn AocSolver {
-    pub fn execute(&self, input: &str) {
+    fn execute(&self, input: &str) {
         let start_total = time::Instant::now();
         let start_part1 = time::Instant::now();
         println!(
@@ -65,3 +63,4 @@ impl dyn AocSolver {
         println!("Total: {:?}", start_total.elapsed());
     }
 }
+
