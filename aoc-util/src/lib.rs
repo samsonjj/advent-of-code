@@ -45,7 +45,7 @@ pub trait AocSolver {
         let start_part1 = time::Instant::now();
         println!(
             "Part 1: {} in {:?}",
-            match self.part_1(input.trim()) {
+            match self.part_1(input) {
                 Ok(d) => d.to_string(),
                 Err(e) => e.to_string(),
             },
@@ -54,7 +54,7 @@ pub trait AocSolver {
         let start_part2 = time::Instant::now();
         println!(
             "Part 2: {} in {:?}",
-            match self.part_2(input.trim()) {
+            match self.part_2(input) {
                 Ok(d) => d.to_string(),
                 Err(e) => e.to_string(),
             },
@@ -63,4 +63,3 @@ pub trait AocSolver {
         println!("Total: {:?}", start_total.elapsed());
     }
 }
-

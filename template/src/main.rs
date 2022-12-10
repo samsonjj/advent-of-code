@@ -16,11 +16,13 @@ struct Temp {}
 
 impl AocSolver for Temp {
     fn part_1(&self, input: &str) -> AocResult<String> {
-        Ok(format!("{}", 3))
+        let answer = 3;
+        Ok(format!("{}", answer))
     }
 
     fn part_2(&self, input: &str) -> AocResult<String> {
-        Ok(format!("{}", 5))
+        let answer = 5;
+        Ok(format!("{}", answer))
     }
 }
 
