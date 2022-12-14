@@ -149,6 +149,9 @@ fn calculate_sizes(dir: &Rc<RefCell<Dir>>) -> i64 {
     sum
 }
 
+/**
+ * Returns a vec of all dirs in the file tree, under the given dir.
+ */
 fn get_dirs(dir: &Rc<RefCell<Dir>>) -> Vec<Rc<RefCell<Dir>>> {
     let mut dirs = vec![Rc::clone(dir)];
     for child_dir in dir.borrow().child_dirs.iter() {
@@ -183,15 +186,5 @@ impl AocSolver for Temp {
             .unwrap();
 
         Ok(format!("{}", best_file_size))
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn two_plus_two() {
-        assert_eq!(2 + 2, 4);
     }
 }
