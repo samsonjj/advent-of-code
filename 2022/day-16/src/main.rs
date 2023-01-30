@@ -13,7 +13,7 @@ static EXAMPLE: &str = include_str!("example.txt");
 
 fn main() {
     let temp = Temp {};
-    temp.execute(EXAMPLE);
+    temp.execute(INPUT);
 }
 
 struct Temp {}
@@ -47,7 +47,6 @@ fn breadth_first_search(nodes: &HashMap<String, Rc<RefCell<Node>>>) -> Matrix {
         distances.insert(node.borrow().label_string.clone(), 0);
         while queue.len() > 0 {
             let s = queue.pop().unwrap();
-            dbg!(&s.borrow().label_string[..]);
             let distance = distances.get(&s.borrow().label_string[..]).unwrap() + 1;
 
             for edge in s.borrow().edges.iter() {
@@ -134,74 +133,6 @@ impl Game {
 
 impl AocSolver for Temp {
     fn part_1(&self, input: &str) -> AocResult<String> {
-        // let answer = 3;
-        // let regex = Regex::new(
-        //     r"^Valve ([A-Z][A-Z]) has flow rate=(\d*); tunnels lead to valves ([A-Z,]*$",
-        // )
-        // .unwrap();
-        // let mut labelToIndexMap: HashMap<String, i32> = HashMap::new();
-        // let mut edges: Vec<(String, String)> = vec![];
-        // let mut nodes: HashMap<i32, RefCell<Node>> = HashMap::new();
-        // let data: Vec<(String, i32, Vec<String>, usize)> = input
-        //     .lines()
-        //     .enumerate()
-        //     .map(|(index, line)| {
-        //         let caps = regex.captures(line).unwrap();
-        //         let label = caps.get(1).unwrap().as_str().to_string();
-        //         let flow_rate = caps.get(1).unwrap().as_str().parse::<i32>().unwrap();
-        //         let valves = caps
-        //             .get(2)
-        //             .unwrap()
-        //             .as_str()
-        //             .split(", ")
-        //             .map(|s| String::from(s))
-        //             .collect::<Vec<_>>();
-        //         (label, flow_rate, valves, index)
-        //     })
-        //     .collect();
-
-        // for (label, flow_rate, neighbors, index) in data.into_iter() {
-        //     labelToIndexMap.insert(label, index as i32);
-        //     let data = nodes.insert(
-        //         index as i32,
-        //         RefCell::new(Node {
-        //             index: index as i32,
-        //             label_string: label.clone(),
-        //             edges: vec![],
-        //         }),
-        //     );
-        //     for neighbor in neighbors.into_iter() {
-        //         edges.push((label.clone(), neighbor));
-        //     }
-        // }
-        // for edge in edges.into_iter() {
-        //     let neighbor = nodes.get("");
-        //     let mut data = nodes.entry(*labelToIndexMap.get(&edge.0).unwrap());
-        //     *data.borrow_mut().edges.push();
-        // }
-
-        // let connection_matrix = breadth_first_search(nodes);
-        // println!("{:?}", connection_matrix);
-        // let answer = 5;
-        // let nodes = parse::parse_input(input);
-
-        // println!(
-        //     "{:?}",
-        //     nodes
-        //         .get(&"AA".to_string())
-        //         .unwrap()
-        //         .borrow()
-        //         .edges
-        //         .iter()
-        //         .map(|edge| edge.node.borrow().label_string.clone())
-        //         .collect::<Vec<_>>()
-        // );
-
-        // let connection_matrix = breadth_first_search(&nodes);
-        // println!(
-        //     "AA index = {}",
-        //     nodes.get(&"AA".to_string()).unwrap().borrow().index
-        // );
         let graph = parse::Graph::parse_graph(input);
         let matrix = graph.connection_matrix();
 
@@ -266,7 +197,9 @@ impl AocSolver for Temp {
             (max_result, max_actions)
         }
 
-        let (answer, actions) = permute(&mut marked_nodes, 0usize, &matrix, &graph, &mut game);
+        let aa_node = graph.label_to_node.get(&"AA".to_string()).unwrap().index;
+        dbg!(aa_node);
+        let (answer, actions) = permute(&mut marked_nodes, aa_node, &matrix, &graph, &mut game);
 
         dbg!(actions);
 
