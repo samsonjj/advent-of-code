@@ -116,13 +116,16 @@ impl Game {
 
     pub fn goto_node(&mut self, node_index: usize) -> Option<i32> {
         let time = self.graph.distance(self.current_node, node_index) + 1;
-        let delta_flow = self.graph.node_by_index(node_index).flow_rate;
+
         if time >= self.time_left {
             // dbg!(self.steam_released);
-            self.actions.push(Action::SpinClock { time: time });
-            self.tick(time, 0);
+            self.actions.push(Action::SpinClock {
+                time: self.time_left,
+            });
+            self.tick(self.time_left, 0);
             Some(self.steam_released)
         } else {
+            let delta_flow = self.graph.node_by_index(node_index).flow_rate;
             self.actions.push(Action::Move {
                 time,
                 delta_flow,
@@ -130,19 +133,32 @@ impl Game {
                 node_index,
                 label: self.graph.node_by_index(node_index).label.clone(),
             });
-            self.current_node = node_index;
-            self.nodes.remove(&node_index);
+            self.travel(node_index);
             self.tick(time, delta_flow);
             None
         }
     }
 
-    // returns an i32 (amount of steam released) if time runs out
-    // in that case, does not update time_left
+    fn travel(&mut self, node_index: usize) {
+        self.current_node = node_index;
+        self.nodes.remove(&node_index);
+    }
+
+    fn untravel(&mut self, node_index: usize) {
+        self.nodes.insert(self.current_node);
+        self.current_node = node_index;
+    }
+
     pub fn tick(&mut self, time: i32, delta_flow: i32) {
         self.time_left -= time;
         self.steam_released += time * self.flow_rate;
         self.flow_rate += delta_flow;
+    }
+
+    pub fn untick(&mut self, time: i32, delta_flow: i32) {
+        self.flow_rate -= delta_flow;
+        self.steam_released -= time * self.flow_rate;
+        self.time_left += time;
     }
 
     /// waste the rest of the time
@@ -159,12 +175,10 @@ impl Game {
         let action = self.actions.pop().unwrap();
         match action {
             Action::SpinClock { time } => {
-                self.time_left += time;
-                self.steam_released -= time * self.flow_rate;
+                self.untick(time, 0);
             }
             Action::SpinClock2 { time } => {
-                self.time_left += time;
-                self.steam_released -= time * self.flow_rate;
+                self.untick(time, 0);
             }
             Action::Move {
                 delta_flow,
@@ -173,14 +187,8 @@ impl Game {
                 node_index,
                 label,
             } => {
-                self.time_left += time;
-
-                // order of these two is important
-                self.flow_rate -= delta_flow;
-                self.steam_released -= time * self.flow_rate;
-
-                self.nodes.insert(node_index);
-                self.current_node = from_node_index;
+                self.untick(time, delta_flow);
+                self.untravel(from_node_index);
             }
         }
     }
@@ -225,8 +233,8 @@ impl AocSolver for Temp {
     fn part_1(&self, input: &str) -> AocResult<String> {
         let graph = parse::Graph::parse_graph(input);
 
-        // only use nodes that have flow_rate > 0
-        let mut marked_nodes: HashSet<usize> = graph
+        // only search nodes that have flow_rate > 0
+        let marked_nodes: HashSet<usize> = graph
             .label_to_node
             .values()
             .filter(|node| node.flow_rate > 0)
@@ -235,6 +243,7 @@ impl AocSolver for Temp {
 
         let start_node = graph.label_to_node.get(&"AA".to_string()).unwrap().index;
 
+        dbg!(start_node);
         let mut game = Game::new(graph, marked_nodes, start_node);
 
         let (answer, actions) = permute(&mut game);
