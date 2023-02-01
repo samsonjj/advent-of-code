@@ -8,6 +8,8 @@ use std::time;
 
 mod parse;
 
+use parse::Graph;
+
 static INPUT: &str = include_str!("input.txt");
 static EXAMPLE: &str = include_str!("example.txt");
 
@@ -51,16 +53,9 @@ fn breadth_first_search(nodes: &HashMap<String, Rc<RefCell<Node>>>) -> Matrix {
 
             for edge in s.borrow().edges.iter() {
                 if !visited.contains(&edge.node.borrow().index) {
-                    println!(
-                        "distances of {} to {} is {}",
-                        edge.node.borrow().index,
-                        s.borrow().index,
-                        distance
-                    );
                     distances.insert(edge.node.borrow().label_string.clone(), distance);
                     let index = edge.node.borrow().index;
                     matrix[index as usize][s.borrow().index as usize] = distance;
-                    // matrix[s.borrow().index as usize][index as usize] = distance;
 
                     queue.push(Rc::clone(&edge.node));
                     visited.insert(index);
@@ -79,14 +74,27 @@ fn breadth_first_search(nodes: &HashMap<String, Rc<RefCell<Node>>>) -> Matrix {
 use regex::Regex;
 
 #[derive(Clone, Debug)]
-struct Action {
-    delta_flow: i32,
-    time: i32,
-    node: String,
+enum Action {
+    Move {
+        delta_flow: i32,
+        time: i32,
+        from_node_index: usize,
+        node_index: usize,
+        label: String,
+    },
+    SpinClock {
+        time: i32,
+    },
+    SpinClock2 {
+        time: i32,
+    },
 }
 
 #[derive(Debug)]
 struct Game {
+    graph: Graph,
+    nodes: HashSet<usize>,
+    current_node: usize,
     flow_rate: i32,
     steam_released: i32,
     time_left: i32,
@@ -94,53 +102,130 @@ struct Game {
 }
 
 impl Game {
-    pub fn new() -> Self {
+    pub fn new(graph: Graph, nodes: HashSet<usize>, start_node: usize) -> Self {
         Game {
+            graph,
+            nodes,
+            current_node: start_node,
             flow_rate: 0,
             steam_released: 0,
             time_left: 30,
             actions: vec![],
         }
     }
+
+    pub fn goto_node(&mut self, node_index: usize) -> Option<i32> {
+        let time = self.graph.distance(self.current_node, node_index) + 1;
+        let delta_flow = self.graph.node_by_index(node_index).flow_rate;
+        if time >= self.time_left {
+            // dbg!(self.steam_released);
+            self.actions.push(Action::SpinClock { time: time });
+            self.tick(time, 0);
+            Some(self.steam_released)
+        } else {
+            self.actions.push(Action::Move {
+                time,
+                delta_flow,
+                from_node_index: self.current_node,
+                node_index,
+                label: self.graph.node_by_index(node_index).label.clone(),
+            });
+            self.current_node = node_index;
+            self.nodes.remove(&node_index);
+            self.tick(time, delta_flow);
+            None
+        }
+    }
+
     // returns an i32 (amount of steam released) if time runs out
     // in that case, does not update time_left
-    pub fn tick(&mut self, time: i32, delta_flow: i32, node: String) -> Option<i32> {
-        if time >= self.time_left {
-            // dbg!(&self);
-            return Some(self.time_left * self.flow_rate + self.steam_released);
-        }
+    pub fn tick(&mut self, time: i32, delta_flow: i32) {
         self.time_left -= time;
         self.steam_released += time * self.flow_rate;
         self.flow_rate += delta_flow;
+    }
 
-        self.actions.push(Action {
-            time,
-            delta_flow,
-            node,
+    /// waste the rest of the time
+    pub fn run_the_clock(&mut self) -> i32 {
+        self.actions.push(Action::SpinClock2 {
+            time: self.time_left,
         });
-
-        None
+        self.tick(self.time_left, 0);
+        self.steam_released
     }
+
     pub fn rewind(&mut self) {
+        // dbg!(&self.actions);
         let action = self.actions.pop().unwrap();
-        self.time_left += action.time;
+        match action {
+            Action::SpinClock { time } => {
+                self.time_left += time;
+                self.steam_released -= time * self.flow_rate;
+            }
+            Action::SpinClock2 { time } => {
+                self.time_left += time;
+                self.steam_released -= time * self.flow_rate;
+            }
+            Action::Move {
+                delta_flow,
+                time,
+                from_node_index,
+                node_index,
+                label,
+            } => {
+                self.time_left += time;
 
-        // order of these two is important
-        self.flow_rate -= action.delta_flow;
-        self.steam_released -= action.time * self.flow_rate;
+                // order of these two is important
+                self.flow_rate -= delta_flow;
+                self.steam_released -= time * self.flow_rate;
+
+                self.nodes.insert(node_index);
+                self.current_node = from_node_index;
+            }
+        }
     }
+}
+
+fn permute(game: &mut Game) -> (i32, Vec<Action>) {
+    if game.nodes.len() == 0 {
+        let result = game.run_the_clock();
+        let actions = game.actions.clone();
+        // dbg!(game.steam_released);
+        game.rewind();
+        // dbg!(game.steam_released);
+        return (result, actions);
+    }
+
+    let nodes_list: Vec<usize> = game.nodes.clone().iter().map(|x| *x).collect();
+
+    let mut max_result = 0;
+    let mut max_actions = vec![];
+
+    for node_index in nodes_list.iter() {
+        let result = game.goto_node(*node_index);
+        let (result, actions) = match result {
+            Some(steam_released) => (steam_released, game.actions.clone()), // game over, compare to previous results, keep max
+            None => {
+                // game not over, continue permutations
+                let x = permute(game);
+                x
+            }
+        };
+        game.rewind();
+        if result > max_result {
+            max_result = result;
+            max_actions = actions;
+        }
+    }
+
+    (max_result, max_actions)
 }
 
 impl AocSolver for Temp {
     fn part_1(&self, input: &str) -> AocResult<String> {
         let graph = parse::Graph::parse_graph(input);
-        let matrix = graph.connection_matrix();
 
-        // now that we have the matrix, we just have to check the result for
-        // each possible permutation of the nodes. We can ignore nodes that
-        // have zero flow_rate, when calculating the permutations.
-
-        // nodes that have flow_rate > 0
+        // only use nodes that have flow_rate > 0
         let mut marked_nodes: HashSet<usize> = graph
             .label_to_node
             .values()
@@ -148,62 +233,13 @@ impl AocSolver for Temp {
             .map(|node| node.index)
             .collect();
 
-        dbg!(&marked_nodes);
+        let start_node = graph.label_to_node.get(&"AA".to_string()).unwrap().index;
 
-        let mut game = Game::new();
+        let mut game = Game::new(graph, marked_nodes, start_node);
 
-        fn permute(
-            nodes: &mut HashSet<usize>,
-            current_node: usize,
-            matrix: &Vec<Vec<i32>>,
-            graph: &parse::Graph,
-            game: &mut Game,
-        ) -> (i32, Vec<Action>) {
-            if nodes.len() == 0 {
-                let result = game.tick(game.time_left, 0, "timeout".to_string()).unwrap();
-                let actions = game.actions.clone();
-                return (result, actions);
-                // do calculation, idk
-            }
-            let nodes_list: Vec<usize> = nodes.clone().iter().map(|x| *x).collect();
-            let mut max_result = 0;
-            let mut max_actions = vec![];
-            for node in nodes_list.iter() {
-                let distance = matrix[current_node][*node];
-                let delta_flow = graph.index_to_node.get(node).unwrap().flow_rate;
-
-                nodes.remove(node);
-                let result = game.tick(
-                    distance + 1,
-                    delta_flow,
-                    graph.index_to_node.get(node).unwrap().label.clone(),
-                );
-                let (result, actions) = match result {
-                    Some(steam_released) => (steam_released, game.actions.clone()), // game over, compare to previous results, keep max
-                    None => {
-                        // game not over, continue permutations
-                        let x = permute(nodes, *node, matrix, graph, game);
-                        game.rewind();
-                        x
-                    }
-                };
-                if result > max_result {
-                    max_result = result;
-                    max_actions = actions;
-                }
-                nodes.insert(*node);
-            }
-
-            (max_result, max_actions)
-        }
-
-        let aa_node = graph.label_to_node.get(&"AA".to_string()).unwrap().index;
-        dbg!(aa_node);
-        let (answer, actions) = permute(&mut marked_nodes, aa_node, &matrix, &graph, &mut game);
+        let (answer, actions) = permute(&mut game);
 
         dbg!(actions);
-
-        println!("{:?}", matrix);
         Ok(format!("{}", answer))
     }
 
@@ -222,27 +258,3 @@ mod tests {
         assert_eq!(2 + 2, 4);
     }
 }
-
-/*
- * Say there are N nodes. We can build a connection matrix (NxN) which details the distance between any two nodes.
- *
- * [0 1 4 ..]
- * [1 0 2 ..]
- * [2 1 0 ..]
- * [........]
- *
- * At any time, we must choose which node to go to next. That is the key decision.
- *
- * Decision Factors:
- * - time it takes to get there (distance)
- * - flow rate
- * - time remaining
- * - other nodes
- * - which nodes have been visited
- *
- * How maximize steam release?
- *
- * This is likely not a shortest path problem... It seems like maximization problem
- *
- * Lets try brute force!
- */

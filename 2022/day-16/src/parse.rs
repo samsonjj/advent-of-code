@@ -7,17 +7,23 @@ use crate::Node;
 
 pub fn capture_input(input: &str) {}
 
+#[derive(Debug)]
 pub struct Graph {
     pub edges: Vec<HashSet<usize>>,
     pub label_to_node: HashMap<String, NodeValue>,
     pub index_to_node: HashMap<usize, NodeValue>,
+    pub connection_matrix: Vec<Vec<i32>>,
 }
 
 impl Graph {
+    pub fn distance(&self, a: usize, b: usize) -> i32 {
+        self.connection_matrix[a][b]
+    }
+    pub fn node_by_index(&self, index: usize) -> &NodeValue {
+        self.index_to_node.get(&index).unwrap()
+    }
     pub fn parse_graph(input: &str) -> Self {
         let input_items = parse_input(input);
-
-        dbg!(&input_items);
 
         let mut index_to_node: HashMap<usize, NodeValue> = HashMap::new();
         let mut nodes: HashMap<String, NodeValue> = HashMap::new();
@@ -49,11 +55,16 @@ impl Graph {
             }
         }
 
-        Self {
+        let mut result = Self {
             edges: edges,
             label_to_node: nodes,
             index_to_node,
-        }
+            connection_matrix: vec![],
+        };
+
+        result.connection_matrix = result.compute_connection_matrix();
+
+        result
     }
 
     pub fn index(&self, label: &str) {
@@ -64,7 +75,7 @@ impl Graph {
         &self.index_to_node.get(&index).unwrap().label[..]
     }
 
-    pub fn connection_matrix(&self) -> Vec<Vec<i32>> {
+    pub fn compute_connection_matrix(&self) -> Vec<Vec<i32>> {
         // 1) Repeat for each node:
         // 2) bfs the node
         // 3) mark the distance to each in the connection matrix
@@ -83,9 +94,6 @@ impl Graph {
                 let s = queue.pop_front().unwrap();
                 for r in edges.get(s).unwrap() {
                     if !visited.contains(r) {
-                        if node == 60 {
-                            dbg!(graph.label(*r), graph.label(s), matrix[node][s] + 1);
-                        }
                         matrix[node][*r] = matrix[node][s] + 1;
                         queue.push_back(*r);
                         visited.insert(*r);
@@ -100,6 +108,7 @@ impl Graph {
     }
 }
 
+#[derive(Debug)]
 pub struct NodeValue {
     pub flow_rate: i32,
     pub index: usize,
