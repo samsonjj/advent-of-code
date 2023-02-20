@@ -7,7 +7,7 @@ use crate::Node;
 
 pub fn capture_input(input: &str) {}
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Graph {
     pub edges: Vec<HashSet<usize>>,
     pub label_to_node: HashMap<String, NodeValue>,
