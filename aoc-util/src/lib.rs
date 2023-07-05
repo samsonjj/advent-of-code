@@ -35,3 +35,31 @@ pub fn solve_and_print<T: DisplayDebug>(
     );
     println!("Total: {:?}", start_total.elapsed());
 }
+
+pub trait AocSolver {
+    fn part_1(&self, input: &str) -> Result<String, Box<dyn Error>>;
+    fn part_2(&self, input: &str) -> Result<String, Box<dyn Error>>;
+
+    fn execute(&self, input: &str) {
+        let start_total = time::Instant::now();
+        let start_part1 = time::Instant::now();
+        println!(
+            "Part 1: {} in {:?}",
+            match self.part_1(input) {
+                Ok(d) => d.to_string(),
+                Err(e) => e.to_string(),
+            },
+            start_part1.elapsed()
+        );
+        let start_part2 = time::Instant::now();
+        println!(
+            "Part 2: {} in {:?}",
+            match self.part_2(input) {
+                Ok(d) => d.to_string(),
+                Err(e) => e.to_string(),
+            },
+            start_part2.elapsed()
+        );
+        println!("Total: {:?}", start_total.elapsed());
+    }
+}
