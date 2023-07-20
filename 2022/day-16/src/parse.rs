@@ -108,7 +108,7 @@ impl Graph {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct NodeValue {
     pub flow_rate: i32,
     pub index: usize,
