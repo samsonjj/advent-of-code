@@ -9,7 +9,12 @@ static EXAMPLE: &str = include_str!("example.txt");
 
 fn main() {
     let temp = Temp {};
-    temp.execute(INPUT);
+    let args: Vec<String> = std::env::args().collect();
+    if args.contains(&"--example".to_string()) {
+        temp.execute(EXAMPLE);
+    } else {
+        temp.execute(INPUT);
+    }
 }
 
 struct Temp {}
@@ -35,4 +40,3 @@ mod tests {
         assert_eq!(2 + 2, 4);
     }
 }
-

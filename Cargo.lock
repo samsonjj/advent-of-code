@@ -184,6 +184,76 @@ dependencies = [
 ]
 
 [[package]]
+name = "day-10"
+version = "0.1.0"
+dependencies = [
+ "aoc-util",
+]
+
+[[package]]
+name = "day-11"
+version = "0.1.0"
+dependencies = [
+ "aoc-util",
+]
+
+[[package]]
+name = "day-2"
+version = "0.1.0"
+dependencies = [
+ "aoc-util",
+]
+
+[[package]]
+name = "day-3"
+version = "0.1.0"
+dependencies = [
+ "aoc-util",
+]
+
+[[package]]
+name = "day-4"
+version = "0.1.0"
+dependencies = [
+ "aoc-util",
+]
+
+[[package]]
+name = "day-5"
+version = "0.1.0"
+dependencies = [
+ "aoc-util",
+]
+
+[[package]]
+name = "day-6"
+version = "0.1.0"
+dependencies = [
+ "aoc-util",
+]
+
+[[package]]
+name = "day-7"
+version = "0.1.0"
+dependencies = [
+ "aoc-util",
+]
+
+[[package]]
+name = "day-8"
+version = "0.1.0"
+dependencies = [
+ "aoc-util",
+]
+
+[[package]]
+name = "day-9"
+version = "0.1.0"
+dependencies = [
+ "aoc-util",
+]
+
+[[package]]
 name = "encoding_rs"
 version = "0.8.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"
