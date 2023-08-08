@@ -61,15 +61,15 @@ fn process_package(path: &Path, year: &str) -> Result<(), anyhow::Error> {
 
     let replacer = |captures: &regex::Captures| -> String {
         let capture = captures.get(1).unwrap();
-        let result = format!("{}-{}", capture.as_str(), year);
+        let result = format!(r#"name = "{}-{}""#, capture.as_str(), year);
         result
     };
 
     let updated_cargo_contents =
         package_name_pattern.replace_all(cargo_contents.as_str(), replacer);
 
-    // let mut new_cargo_file = fs::File::create(&cargo_file)?;
-    // new_cargo_file.write_all(updated_cargo_contents.as_bytes())?;
+    let mut new_cargo_file = fs::File::create(&cargo_file)?;
+    new_cargo_file.write_all(updated_cargo_contents.as_bytes())?;
 
     Ok(())
 }
