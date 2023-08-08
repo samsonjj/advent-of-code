@@ -1,12 +1,8 @@
 [package]
-name = "rename_packages"
+name = "point_arithmetic"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = { version = "1.0.72", features = ["backtrace"] }
-env_logger = "0.10.0"
-log = "0.4.19"
-regex = "1.9.3"
