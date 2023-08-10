@@ -11,6 +11,7 @@ fn main() -> Result<(), anyhow::Error> {
         error!("Error: {:#?}", err);
         error!("Error: {:#?}", err.backtrace());
     }
+
     Ok(())
 }
 
@@ -44,6 +45,7 @@ fn find_subdirectories<'a>(
         } else {
             find_subdirectories(&path, year)?;
         }
+        process_package(&path, entry.file_name().to_str().unwrap())?;
     }
 
     Ok(())
@@ -61,7 +63,9 @@ fn process_package(path: &Path, year: &str) -> Result<(), anyhow::Error> {
 
     let replacer = |captures: &regex::Captures| -> String {
         let capture = captures.get(1).unwrap();
+
         let result = format!(r#"name = "{}-{}""#, capture.as_str(), year);
+      
         result
     };
 
