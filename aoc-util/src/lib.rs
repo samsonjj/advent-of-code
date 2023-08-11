@@ -1,15 +1,12 @@
 use std::error::Error;
-use std::fmt::{Debug, Display};
+use std::fmt;
 use std::time;
 
-pub trait DisplayDebug: Display + Debug {}
-impl<T: Display + Debug> DisplayDebug for T {}
-
-pub type AocResult<T> = Result<T, Box<dyn Error>>;
+pub type AocResult<T> = anyhow::Result<T, Box<dyn Error>>;
 
 pub type AocPartSolver<T> = Box<dyn FnOnce(&str) -> AocResult<T>>;
 
-pub fn solve_and_print<T: DisplayDebug>(
+pub fn solve_and_print<T: fmt::Debug + fmt::Display>(
     input: &str,
     part_1: AocPartSolver<T>,
     part_2: AocPartSolver<T>,
