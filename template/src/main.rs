@@ -21,22 +21,10 @@ struct Temp {}
 
 impl AocSolver for Temp {
     fn part_1(&self, input: &str) -> AocResult<String> {
-        let answer = 3;
-        Ok(format!("{}", answer))
+        Ok(format!("{}", 1))
     }
 
     fn part_2(&self, input: &str) -> AocResult<String> {
-        let answer = 5;
-        Ok(format!("{}", answer))
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn two_plus_two() {
-        assert_eq!(2 + 2, 4);
+        Ok(format!("{}", 2))
     }
 }

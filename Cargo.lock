@@ -114,6 +114,9 @@ dependencies = [
 [[package]]
 name = "aoc-util"
 version = "0.1.0"
+dependencies = [
+ "anyhow",
+]
 
 [[package]]
 name = "approx"
@@ -764,6 +767,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "day-12-2017"
+version = "0.1.0"
+dependencies = [
+ "aoc-util",
+]
+
+[[package]]
 name = "day-12-2021"
 version = "0.1.0"
 dependencies = [
@@ -774,6 +784,13 @@ dependencies = [
 
 [[package]]
 name = "day-12-2022"
+version = "0.1.0"
+dependencies = [
+ "aoc-util",
+]
+
+[[package]]
+name = "day-13-2017"
 version = "0.1.0"
 dependencies = [
  "aoc-util",
@@ -819,6 +836,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "day-15-2017"
+version = "0.1.0"
+dependencies = [
+ "aoc-util",
+ "regex",
+]
+
+[[package]]
 name = "day-15-2021"
 version = "0.1.0"
 dependencies = [
@@ -831,6 +856,13 @@ version = "0.1.0"
 dependencies = [
  "aoc-util",
  "regex",
+]
+
+[[package]]
+name = "day-16-2017"
+version = "0.1.0"
+dependencies = [
+ "aoc-util",
 ]
 
 [[package]]
