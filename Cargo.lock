@@ -888,7 +888,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "day-17-2017"
+version = "0.1.0"
+dependencies = [
+ "aoc-util",
+]
+
+[[package]]
 name = "day-17-2021"
+version = "0.1.0"
+dependencies = [
+ "aoc-util",
+]
+
+[[package]]
+name = "day-18-2017"
 version = "0.1.0"
 dependencies = [
  "aoc-util",
