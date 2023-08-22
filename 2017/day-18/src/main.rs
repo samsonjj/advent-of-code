@@ -64,7 +64,7 @@ fn parse_line(line: &str) -> Instruction {
 
 struct Duet {
     instructions: Vec<Instruction>,
-    registers: HashMap<char, i64>,
+    registers: Vec<i64>,
     pc: i64,
     last_sound: i64,
 }
@@ -73,14 +73,14 @@ impl Duet {
     fn new(s: &str) -> Self {
         Self {
             instructions: s.lines().map(parse_line).collect(),
-            registers: HashMap::new(),
+            registers: vec![0; 26],
             pc: 0,
             last_sound: 0,
         }
     }
 
     fn reg(&mut self, c: char) -> &mut i64 {
-        self.registers.entry(c).or_insert(0)
+        &mut self.registers[c as usize - 'a' as usize]
     }
 
     fn run_single(&mut self) -> Option<Option<i64>> {
@@ -114,14 +114,14 @@ impl Duet {
     fn val(&mut self, val: Val) -> i64 {
         match val {
             Val::Raw(x) => x,
-            Val::Reg(c) => *self.registers.entry(c).or_insert(0),
+            Val::Reg(c) => *self.reg(c),
         }
     }
 }
 
 struct Duet2 {
     instructions: Vec<Instruction>,
-    registers: HashMap<char, i64>,
+    registers: [i64; 26],
     pc: i64,
     send_count: i64,
     queue: Rc<RefCell<VecDeque<i64>>>,
@@ -137,8 +137,8 @@ impl Duet2 {
         other_queue: Rc<RefCell<VecDeque<i64>>>,
         id: usize,
     ) -> Self {
-        let mut registers = HashMap::new();
-        registers.insert('p', id as i64);
+        let mut registers = [0i64; 26];
+        registers['p' as usize - 'a' as usize] = id as i64;
         Self {
             instructions: s.lines().map(parse_line).collect(),
             registers,
@@ -151,8 +151,9 @@ impl Duet2 {
         }
     }
 
+    #[inline(always)]
     fn reg(&mut self, c: char) -> &mut i64 {
-        self.registers.entry(c).or_insert(0)
+        &mut self.registers[c as usize - 'a' as usize]
     }
 
     /// returns true when paused / done
@@ -160,76 +161,43 @@ impl Duet2 {
         if self.pc < 0 || self.pc as usize >= self.instructions.len() {
             return true;
         }
-        let instruction = self.instructions[self.pc as usize];
-        self.display_instruction(instruction);
-        match instruction {
+        let instruction = &self.instructions[self.pc as usize];
+        match &instruction {
             Instruction::Snd(val) => {
-                let val = self.val(val);
+                let val = self.val(*val);
                 self.other_queue.borrow_mut().push_back(val);
                 self.send_count += 1;
             }
-            Instruction::Set(c, val) => *self.reg(c) = self.val(val),
-            Instruction::Add(c, val) => *self.reg(c) += self.val(val),
-            Instruction::Mul(c, val) => *self.reg(c) *= self.val(val),
-            Instruction::Mod(c, val) => *self.reg(c) %= self.val(val),
+            Instruction::Set(c, val) => *self.reg(*c) = self.val(*val),
+            Instruction::Add(c, val) => *self.reg(*c) += self.val(*val),
+            Instruction::Mul(c, val) => *self.reg(*c) *= self.val(*val),
+            Instruction::Mod(c, val) => *self.reg(*c) %= self.val(*val),
             Instruction::Rcv(c) => {
-                let rec_value = self.queue.borrow_mut().pop_front();
-                match rec_value {
-                    Some(x) => *self.reg(c) = x,
+                let rcv_value = self.queue.borrow_mut().pop_front();
+                match rcv_value {
+                    Some(x) => *self.reg(*c) = x,
                     None => return true,
                 }
             }
             Instruction::Jgz(val, offset) => {
-                let val = self.val(val);
+                let val = self.val(*val);
                 if val > 0 {
-                    self.pc += self.val(offset);
+                    self.pc += self.val(*offset);
                     self.pc -= 1;
                 }
             }
         }
-        self.display_state();
         self.pc += 1;
 
         false
     }
 
-    fn val(&mut self, val: Val) -> i64 {
+    #[inline(always)]
+    fn val(&self, val: Val) -> i64 {
         match val {
             Val::Raw(x) => x,
-            Val::Reg(c) => *self.registers.entry(c).or_insert(0),
+            Val::Reg(c) => self.registers[c as usize - 'a' as usize],
         }
-    }
-
-    fn display_instruction(&mut self, instruction: Instruction) {
-        if !self.debug {
-            return;
-        }
-        let mut v = |w: Val| match w {
-            Val::Raw(x) => format!("{x}"),
-            Val::Reg(c) => format!("{c}(={0})", self.val(w)),
-        };
-
-        let label = match instruction {
-            Instruction::Snd(x) => format!("send {}", v(x)),
-            Instruction::Set(x, y) => format!("set {} to {}", x, v(y)),
-            Instruction::Add(x, y) => format!("add {} to {}", x, v(y)),
-            Instruction::Mul(x, y) => format!("mul {} to {}", x, v(y)),
-            Instruction::Mod(x, y) => format!("mod {} to {}", x, v(y)),
-            Instruction::Rcv(x) => format!("rcv into {x} ({0:?})", self.queue.borrow().get(0)),
-            Instruction::Jgz(x, y) => format!("jgz {} _ {}", v(x), v(y)),
-        };
-
-        println!("[{0}] - {1}", self.id, label);
-    }
-
-    fn display_state(&mut self) {
-        if !self.debug {
-            return;
-        }
-        println!(
-            "{0:?}, [{1:?}, {2:?}]",
-            self.registers, self.queue, self.other_queue
-        )
     }
 }
 

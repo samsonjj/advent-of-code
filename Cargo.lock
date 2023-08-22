@@ -916,6 +916,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "day-19-2017"
+version = "0.1.0"
+dependencies = [
+ "aoc-util",
+]
+
+[[package]]
 name = "day-2-2017"
 version = "0.1.0"
 dependencies = [
@@ -928,6 +935,21 @@ version = "0.1.0"
 
 [[package]]
 name = "day-2-2022"
+version = "0.1.0"
+dependencies = [
+ "aoc-util",
+]
+
+[[package]]
+name = "day-20-2017"
+version = "0.1.0"
+dependencies = [
+ "aoc-util",
+ "regex",
+]
+
+[[package]]
+name = "day-21-2017"
 version = "0.1.0"
 dependencies = [
  "aoc-util",
