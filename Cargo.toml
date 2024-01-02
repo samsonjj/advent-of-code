@@ -4,6 +4,7 @@ members = [
   "2017/day-*",
   "2021/day-*",
   "2022/day-*",
+  "2023/day-*",
   "aoc-util",
   "aoc-init",
   "rename_packages"

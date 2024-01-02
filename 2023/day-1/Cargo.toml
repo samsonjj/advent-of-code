@@ -1,5 +1,5 @@
 [package]
-name = "day-11-2021"
+name = "day-1-2023"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,8 +7,4 @@ edition = "2021"
 
 [dependencies]
 aoc-util = { path = "../../aoc-util" }
-ggez = "0.9.3"
-glam = "0.20.1"
 
-[profile.dev]
-opt-level = 1

@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 aoc-util = { path = "../../aoc-util" }
-ggez = "0.7.0"
+ggez = "0.9.3"
 glam = "0.20.1"
 keyframe = "1.0.4"
 
