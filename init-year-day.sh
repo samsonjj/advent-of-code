@@ -1,3 +1,5 @@
+#! /bin/bash
+
 if [ -z $1 ] ; then
 	echo "please provide a year"
 	exit 1
@@ -31,7 +33,7 @@ cp -r template/* $DIR_PATH/
 cd $DIR_PATH
 
 # Edit Cargo.toml
-cat "Cargo.toml" | sed "s/name = \"template\"/name = \"day-$2\"/" >> Cargo.toml.temp
+cat "Cargo.toml" | sed "s/name = \"template\"/name = \"day-$2-$1\"/" >> Cargo.toml.temp
 rm Cargo.toml
 mv Cargo.toml.temp Cargo.toml
 

@@ -1,3 +1,5 @@
+#! python3
+
 import sys
 import shutil
 import os
@@ -16,7 +18,7 @@ def main():
     day = int(sys.argv[2])
 
     source = "./template"
-    destination = f"./{year}/day-{day}"
+    destination = f"./{year}/day-{day}-{year}"
 
     if not os.path.exists(destination):
         os.mkdir(destination)
